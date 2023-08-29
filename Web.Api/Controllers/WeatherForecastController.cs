@@ -136,7 +136,6 @@ namespace Web.Api.Controllers
                     // Move a file
                     fm.Move(file, fullFile);
                 }
-
                 scope1.Complete();
             }
         }
