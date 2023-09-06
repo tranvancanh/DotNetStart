@@ -6,6 +6,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using Tozan.Server.ConnectionString;
+using Tozan.Server.UnitOfWork;
 using static Dapper.SqlMapper;
 
 namespace Tozan.Server.SQLAccess
@@ -15,13 +16,16 @@ namespace Tozan.Server.SQLAccess
     // https://j-levia.hatenablog.jp/entry/2017/04/17/213921
 
 
-    public class SQLAccess : IDisposable
+    public class SQLAccess : IUnitOfWork
     {
         private static readonly string ConnectionString = GetConnectString.GetInstance().ConnectionString;
 
         private DbConnection _connection;
         public IDbConnection Connection => _connection;
 
+
+        private DbTransaction _transaction = null;
+        private IDbTransaction Transaction => throw new NotImplementedException();
 
         public SQLAccess()
         {
@@ -71,11 +75,12 @@ namespace Tozan.Server.SQLAccess
             long affectedRows = 0;
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 affectedRows = _connection.Execute(T_SQL, entityToInsert, transaction);
             }
             catch (Exception ex)
             {
-                affectedRows = -99;
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -97,11 +102,12 @@ namespace Tozan.Server.SQLAccess
             long affectedRows = 0;
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 affectedRows = await _connection.ExecuteAsync(T_SQL, entityToInsert, transaction);
             }
             catch (Exception ex)
             {
-                affectedRows = -99;
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -123,11 +129,12 @@ namespace Tozan.Server.SQLAccess
             long affectedRows = 0;
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 affectedRows = _connection.Execute(T_SQL, entityToUpdate, transaction);
             }
             catch (Exception ex)
             {
-                affectedRows = -99;
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -149,11 +156,12 @@ namespace Tozan.Server.SQLAccess
             long affectedRows = 0;
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 affectedRows = await _connection.ExecuteAsync(T_SQL, entityToUpdate, transaction);
             }
             catch (Exception ex)
             {
-                affectedRows = -99;
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -175,11 +183,12 @@ namespace Tozan.Server.SQLAccess
             long affectedRows = 0;
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 affectedRows = _connection.Execute(T_SQL, entityToDelete, transaction);
             }
             catch (Exception ex)
             {
-                affectedRows = -99;
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -201,11 +210,12 @@ namespace Tozan.Server.SQLAccess
             long affectedRows = 0;
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 affectedRows = await _connection.ExecuteAsync(T_SQL, entityToDelete, transaction);
             }
             catch (Exception ex)
             {
-                affectedRows = -99;
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -227,10 +237,12 @@ namespace Tozan.Server.SQLAccess
             DataTable table = new DataTable();
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 var reader = _connection.ExecuteReader(T_SQL, param: parametter, transaction, commandType: CommandType.Text);
                 table.Load(reader);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 this.ThrowExceptionMessage(ex);
                 throw;
@@ -287,10 +299,12 @@ namespace Tozan.Server.SQLAccess
             DataTable table = new DataTable();
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 var reader = await _connection.ExecuteReaderAsync(T_SQL, param: parametter, transaction, commandType: CommandType.Text);
                 table.Load(reader);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 this.ThrowExceptionMessage(ex);
                 throw;
@@ -345,6 +359,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public IEnumerable<T> ExecQueryData<T>(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return _connection.Query<T>(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -360,6 +376,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public T ExecQueryDataFistOrDefault<T>(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return _connection.QueryFirstOrDefault<T>(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -375,6 +393,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public async Task<IEnumerable<T>> ExecQueryDataAsync<T>(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return await _connection.QueryAsync<T>(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -390,6 +410,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public async Task<T> ExecQueryDataFirstOrDefaultAsync<T>(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return await _connection.QueryFirstOrDefaultAsync<T>(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
         //**************************************************************************************/
@@ -407,6 +429,8 @@ namespace Tozan.Server.SQLAccess
             var listDataTable = new List<DataTable>();
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 var gridReader = _connection.QueryMultiple(T_SQL, parametter, transaction, commandType: CommandType.Text);
                 while (!gridReader.IsConsumed)
                 {
@@ -438,6 +462,8 @@ namespace Tozan.Server.SQLAccess
             var listDataTable = new List<DataTable>();
             try
             {
+                if (transaction is null)
+                    transaction = this._transaction;
                 var gridReader = await _connection.QueryMultipleAsync(T_SQL, parametter, transaction, commandType: CommandType.Text);
                 while (!gridReader.IsConsumed)
                 {
@@ -466,6 +492,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public GridReader ExecQueryMultipleQueriesData(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return _connection.QueryMultiple(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -481,6 +509,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public async Task<GridReader> ExecQueryMultipleQueriesDataAsync(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return await _connection.QueryMultipleAsync(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -496,6 +526,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public int ExecQueryNonData(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return _connection.Execute(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -511,6 +543,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public async Task<int> ExecQueryNonDataAsync(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return await _connection.ExecuteAsync(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -538,6 +572,8 @@ namespace Tozan.Server.SQLAccess
 
         public int ExecProcedureNonData(string ProcedureName, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             //return affectedRows 
             return _connection.Execute(ProcedureName, parametter, transaction, commandType: CommandType.StoredProcedure);
         }
@@ -562,6 +598,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public object ExecQuerySacalar(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return _connection.ExecuteScalar<object>(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -577,6 +615,8 @@ namespace Tozan.Server.SQLAccess
         //**************************************************************************************/
         public async Task<object> ExecQuerySacalarAsync(string T_SQL, object parametter = null, IDbTransaction transaction = null)
         {
+            if (transaction is null)
+                transaction = this._transaction;
             return await _connection.ExecuteScalarAsync<object>(T_SQL, parametter, transaction, commandType: CommandType.Text);
         }
 
@@ -593,6 +633,75 @@ namespace Tozan.Server.SQLAccess
         }
 
         //////////////////////////////////////////////////////////////// Procedure Stop ///////////////////////////////////////////////////////////////////////
+
+
+        public void Begin()
+        {
+            if (_connection is not null)
+                _transaction = _connection.BeginTransaction();
+            else
+                throw new ArgumentNullException("Connection is null");
+            return;
+        }
+
+        public void Commit()
+        {
+            try
+            {
+                if (_transaction is not null)
+                    _transaction.Commit();
+                else
+                    throw new ArgumentNullException("Transaction is null");
+            }
+            catch (Exception ex)
+            {
+                this.ThrowExceptionMessage(ex);
+                throw;
+            }
+            return;
+        }
+
+        public void Rollback()
+        {
+            if (_transaction is not null)
+                _transaction.Rollback();
+            else
+                throw new ArgumentNullException("Transaction is null");
+        }
+
+        public async Task BeginAsync()
+        {
+            if (_connection is not null)
+                _transaction = await _connection.BeginTransactionAsync();
+            else
+                throw new ArgumentNullException("Connection is null");
+        }
+
+        public async Task CommitAsync()
+        {
+            try
+            {
+                if (_transaction is not null)
+                    await _transaction.CommitAsync();
+                else
+                    throw new ArgumentNullException("Transaction is null");
+            }
+            catch (Exception ex)
+            {
+                this.ThrowExceptionMessage(ex);
+                throw;
+            }
+            return;
+        }
+
+        public async Task RollbackAsync()
+        {
+            if (_transaction is not null)
+                await _transaction.RollbackAsync();
+            else
+                throw new ArgumentNullException("Transaction is null");
+            return;
+        }
 
         /// <summary>
         /// log
@@ -612,11 +721,20 @@ namespace Tozan.Server.SQLAccess
             if (!disposed)
             {
                 // If the call is from Dispose, free managed resources.
-                if (disposing && (_connection is not null))
+                if (disposing)
                 {
-                    _connection.Close();
-                    _connection.Dispose();
-                    _connection = null;
+                    if (_transaction is not null)
+                    {
+                        _transaction.Dispose();
+                        _transaction = null;
+                    }
+
+                    if (_connection is not null)
+                    {
+                        _connection.Close();
+                        _connection.Dispose();
+                        _connection = null;
+                    }
                 }
                 disposed = true;
             }
@@ -642,6 +760,7 @@ namespace Tozan.Server.SQLAccess
         {
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
+            return;
         }
     }
 }

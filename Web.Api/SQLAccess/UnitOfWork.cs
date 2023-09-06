@@ -7,8 +7,6 @@ namespace Tozan.Server.UnitOfWork
 
     public interface IUnitOfWork : IDisposable
     {
-        IDbConnection Connection { get; }
-        IDbTransaction Transaction { get; }
         void Begin();
         void Commit();
         void Rollback();
@@ -65,10 +63,6 @@ namespace Tozan.Server.UnitOfWork
             }
             catch(Exception ex)
             {
-                if (_transaction is not null)
-                {
-                    _transaction.Rollback();
-                }
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
@@ -86,10 +80,6 @@ namespace Tozan.Server.UnitOfWork
             }
             catch(Exception ex)
             {
-                if (_transaction is not null)
-                {
-                    await _transaction.RollbackAsync();
-                }
                 this.ThrowExceptionMessage(ex);
                 throw;
             }
