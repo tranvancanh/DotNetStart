@@ -1,4 +1,7 @@
-﻿/// <summary>
+﻿
+#define TEST   //環境設定
+
+/// <summary>
 /// 東山DBサーバに接続するための文字列を取得する。
 /// </summary>
 namespace Tozan.Server.ConnectionString
@@ -21,10 +24,17 @@ namespace Tozan.Server.ConnectionString
                     {
                         _instance = new GetConnectString();
 
-                        var databaseName = "tozandb_test";
-#if DEBUG
-                        databaseName = "tozandb";
+                        var databaseName = string.Empty;
+#if TEST
+            databaseName = "tozandb_test"; //TEST環境
+#elif UAT
+            databaseName = "tozandb_1stUAT"; //UAT環境
+#elif DEV
+            databaseName = "tozandb_Dev"; //開発環境
+#else
+                        databaseName = "tozandb"; //本番環境
 #endif
+
                         // install library Microsoft.Extensions.Configuration and Microsoft.Extensions.Configuration.Json and Microsoft.AspNetCore.Mvc.NewtonsoftJson
                         var builder = new ConfigurationBuilder()
                                             .SetBasePath(Directory.GetCurrentDirectory())
